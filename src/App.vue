@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import HelloWorld from './components/HelloWorld.vue'
+const msg = $t('测试一下');
 </script>
 
 <template>
@@ -11,7 +12,7 @@ import HelloWorld from './components/HelloWorld.vue'
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>
   </div>
-  <HelloWorld msg="测试一下" />
+  <HelloWorld :msg="msg" />
 </template>
 
 <style scoped>

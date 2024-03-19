@@ -4,4 +4,5 @@ export interface pluginOptionType {
   fileExt?: Array<string>;
   include?: string;
   exclude?: string;
+  exact?: boolean;
 }

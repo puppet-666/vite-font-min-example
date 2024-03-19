@@ -12,8 +12,8 @@ export default defineConfig({
     ViteFontmin({
       fontSrc: 'fonts/*.*',
       fontDest: 'dist/fonts',
-      fileExt: ['vue'],
       include: 'src/**/*',
+      exact: true,
     }) as any
   ],
 })

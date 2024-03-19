@@ -7,7 +7,7 @@ const FILE_EXT = ['ts', 'js', 'tsx', 'jsx', 'vue', 'scss', 'sass', 'html', 'json
 
 const BASE_URL = 'src/**/*';
 
-const defaultText = ['0','1','2','3','4','5','6','7','8','9'];
+const staticReg = /\$t\((['"`])(.*?)\1\)/g;
 
 /**
  * @description: 扫描所有指定文件并返回所有出现过的字符
@@ -26,8 +26,16 @@ export const getCodes = async (options: pluginOptionType) => {
   const getFileCodeSet: (newFilePath: string) => Promise<Set<string>> = newFilePath => {
     return new Promise(resolve => {
       const str = fs.readFileSync(newFilePath, 'utf-8');
-      const newSet = new Set(str.split(''));
-      resolve(newSet);
+      // 精确匹配
+      if(options.exact) {
+        const code = checkT(str);
+        const newSet = new Set(code.split(''));
+        resolve(newSet);
+      }else {
+        const newSet = new Set(str.split(''));
+        resolve(newSet);
+      }
+
     });
   };
 
@@ -50,8 +58,8 @@ export const getCodes = async (options: pluginOptionType) => {
   };
 
   await setCodeSet();
-  
-  return Array(...codeSet, ...defaultText).join('');
+  console.log(codeSet,'---code');
+  return Array(...codeSet).join('');
 };
 
 const toStringArray = (str: string | string[]): string[] => {
@@ -79,15 +87,22 @@ const getFileExt = (fileExt?: string | string[]): string => {
   if (!fileExt) {
     return `{${FILE_EXT.join(',')}}`;
   }
-  if (fileExt instanceof Array) {
-    if (fileExt.length === 0) {
-      return '*';
-    }
-    if (fileExt.length === 1) {
-      return fileExt[0];
-    }
+  if (fileExt instanceof Array && fileExt.length === 0) {
+    return '*';
   }
   return `{${toStringArray(fileExt).join(',')}}`;
+};
+
+const getFileExtByExact = (fileExt?: string | string[]): string[] => {
+  if (!fileExt) {
+    return FILE_EXT;
+  }
+
+  if (fileExt instanceof Array && fileExt.length === 0) {
+    return ['*'];
+  }
+
+  return toStringArray(fileExt);
 };
 
 /**
@@ -99,4 +114,49 @@ export async function fileScanner(options: pluginOptionType) {
   const includes = toFixExt(options.include!, fileExt);
   const excludes = options.exclude ? toFixExt(options.exclude, fileExt) : [];
   return await FastGlob(includes, { ignore: excludes, dot: true });
+}
+
+function transT(code: string) {
+  const replacedCode = code.replace(staticReg, (match, quote, content) => {
+    // 对 $t() 内的字符串进行处理
+    return `'${content}'`;
+  });
+  return replacedCode;
+}
+
+function checkT(code: string) {
+  let replacedCode = '';
+  let match = staticReg.exec(code);
+  while (match !== null) {
+    // 提取 $t() 函数的参数内容
+    const content = match[2];
+    // 如果参数内容不为空，则添加到替换后的字符串中
+    if (content) {
+      replacedCode += content;
+    }
+
+    match = staticReg.exec(code);
+  }
+
+  return replacedCode;
+}
+
+export function compilerT(pluginOption: pluginOptionType, code: string, id: string) {
+  const fileExt = getFileExtByExact(pluginOption.fileExt);
+
+  if(pluginOption.exact) {
+    const isAll = fileExt.length === 1 && fileExt[0] === '*';
+    if (isAll || fileExt.some(ext => id.endsWith(ext))) {
+      return {
+        code: transT(code),
+      };
+    }
+    return {
+      code: transT(code),
+    };
+  }
+
+  return {
+    code,
+  }
 }

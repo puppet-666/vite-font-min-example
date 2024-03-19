@@ -1,14 +1,13 @@
 import Fontmin from 'fontmin';
-import { getCodes } from './utils';
+import { getCodes, compilerT } from './utils';
 import { pluginOptionType } from './type';
 
 const BASE_SRC = './public/font/*.*';
 const BASE_DIST = './dist/font';
 
 
-const fileScanAndFontmin = async (pluginOption: pluginOptionType) => {
+const fileScanAndFontmin = async (pluginOption: pluginOptionType, text: string) => {
   return new Promise(async (resolve, reject) => {
-    const text = await getCodes(pluginOption);
     new Fontmin()
       .src(pluginOption && pluginOption.fontSrc ? pluginOption.fontSrc : BASE_SRC)
       .use(Fontmin.glyph({ text }))
@@ -28,9 +27,12 @@ export default function ViteFontmin(pluginOption: pluginOptionType) {
   return {
     name: 'vite:fontmin',
     apply: 'build',
-    enforce: 'post',
+    transform: async (code, id) => {
+      return compilerT(pluginOption, code, id)
+    },
     closeBundle: async () => {
-      await fileScanAndFontmin(pluginOption);
+      const text = await getCodes(pluginOption);
+      await fileScanAndFontmin(pluginOption,text);
     },
   };
 }
