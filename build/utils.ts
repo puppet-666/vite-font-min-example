@@ -152,7 +152,7 @@ export function compilerT(pluginOption: pluginOptionType, code: string, id: stri
       };
     }
     return {
-      code: transT(code),
+      code,
     };
   }
 
